@@ -1,0 +1,34 @@
+{
+  "name": "slack-standup-bot",
+  "version": "1.0.0",
+  "description": "A Slack bot that asks for daily updates and posts them to a notifications channel",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "nodemon --watch src --ext ts --exec ts-node src/index.ts",
+    "watch": "nodemon --watch src --ext ts --exec ts-node src/index.ts"
+  },
+  "keywords": [
+    "slack",
+    "bot",
+    "standup",
+    "daily-updates"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@slack/bolt": "^3.17.1",
+    "date-fns": "^4.1.0",
+    "date-fns-tz": "^3.2.0",
+    "dotenv": "^16.3.1",
+    "node-cron": "^3.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.6",
+    "@types/node-cron": "^3.0.11",
+    "nodemon": "^3.1.11",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}
