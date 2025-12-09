@@ -3,6 +3,7 @@ import { App } from "@slack/bolt";
 import cron from "node-cron";
 import { format, getDay } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
+import { createServer } from "http";
 import { askForUpdates, handleUpdateResponse } from "./handlers/standup";
 
 // Type definitions
@@ -314,4 +315,26 @@ cron.schedule("0 * * * *", async () => {
       console.log(`   - ${config.userId}: ${config.timezone}`);
     });
   }
+
+  // Create HTTP server for Render health checks
+  const PORT = process.env.PORT || 3000;
+  const server = createServer((req, res) => {
+    if (req.url === "/health" || req.url === "/") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          status: "ok",
+          uptime: process.uptime(),
+          timestamp: new Date().toISOString(),
+        })
+      );
+    } else {
+      res.writeHead(404);
+      res.end();
+    }
+  });
+
+  server.listen(PORT, () => {
+    console.log(`🌐 HTTP server listening on port ${PORT}`);
+  });
 })();
