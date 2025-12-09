@@ -65,13 +65,14 @@ A Slack bot similar to Geekbot that automatically asks team members for daily up
 2. Right-click the channel name → **"View channel details"**
 3. Scroll down and copy the **Channel ID**
 
-### 8. Get User IDs
+### 8. Get User IDs and Configure Standup Times
 
 1. Right-click on each team member's profile picture in Slack
 2. Click **"Copy member ID"**
 3. Collect all user IDs you want to ask for updates
-4. Note each user's timezone (e.g., America/New_York, Europe/London, Asia/Tokyo)
+4. Note each user's timezone (e.g., America/New_York, Europe/London, Europe/Sofia, Asia/Tokyo)
    - Find timezone names at [Wikipedia TZ Database](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
+5. Determine the standup time (hour and minute) for each user in their local timezone
 
 ### 9. Configure Environment Variables
 
@@ -82,21 +83,24 @@ A Slack bot similar to Geekbot that automatically asks team members for daily up
 
 2. Fill in your `.env` file with the values you collected:
    ```env
+   SLACK_BOT_TOKEN=xoxb-your-token
+   SLACK_APP_TOKEN=xapp-your-token
    SLACK_SIGNING_SECRET=your-signing-secret-here
    NOTIFICATIONS_CHANNEL_ID=C01234567890
    STANDUP_SCHEDULE=0 9 * * 1-5
-   TARGET_USERS=U01234567890:America/New_York,U09876543210:Europe/London
+   TARGET_USERS=U01234567890:Europe/Sofia:9:0,U09876543210:America/New_York:13:0
    ```
 
    - **SLACK_BOT_TOKEN**: From step 6
    - **SLACK_APP_TOKEN**: From step 3
    - **SLACK_SIGNING_SECRET**: Found in "Basic Information" → "App Credentials"
    - **NOTIFICATIONS_CHANNEL_ID**: From step 7
-   - **TARGET_USERS**: Format is `userId:timezone,userId:timezone` from step 8
-     - Example: `U01234567890:America/New_York,U09876543210:Europe/London,U11111111111:Asia/Tokyo`
-     - If timezone is omitted, defaults to `America/New_York` → "App Credentials"
-   - **NOTIFICATIONS_CHANNEL_ID**: From step 7
-   - **TARGET_USERS**: Comma-separated user IDs from step 8
+   - **TARGET_USERS**: Format is `userId:timezone:hour:minute` from step 8
+     - Each user can have their own standup time in their local timezone
+     - Example: `U01234567890:Europe/Sofia:9:0,U09876543210:America/New_York:13:0,U11111111111:Asia/Tokyo:10:30`
+     - If timezone is omitted, defaults to `Europe/Sofia`
+     - If hour is omitted, defaults to `9`
+     - If minute is omitted, defaults to `0`
 
 ### 10. Install Dependencies
 
@@ -124,14 +128,14 @@ npm run dev
 
 Production mode:
 ```bash
-npm start
-## Usage
-
 ### Automatic Daily Standup
 
-The bot will automatically send standup questions based on the schedule in your `.env` file. **Each user receives questions at the scheduled time in their own timezone**. For example, if the schedule is set to 9 AM:
-- A user in `America/New_York` gets questions at 9 AM EST
-- A user in `Europe/London` gets questions at 9 AM GMT
+The bot will automatically send standup questions to each user at their configured time in their local timezone. **Each user can have a different standup time**. For example:
+- User 1 in `Europe/Sofia` can receive questions at 9:00 AM
+- User 2 in `America/New_York` can receive questions at 1:00 PM (13:00)
+- User 3 in `Asia/Tokyo` can receive questions at 10:30 AM
+
+The `STANDUP_SCHEDULE` variable controls which days of the week standups are sent (default: Monday-Friday).
 - A user in `Asia/Tokyo` gets questions at 9 AM JST
 
 The bot will automatically send standup questions based on the schedule in your `.env` file. Default is 9 AM on weekdays (Monday-Friday).
@@ -147,21 +151,27 @@ Type `/standup` in any Slack channel to manually trigger the standup questions.
    - What you accomplished yesterday
    - What you're working on today
    - Any blockers or challenges
-3. Click **"Submit"**
-4. Your update will be posted to the notifications channel
+## Configuration Details
 
-## Cron Schedule Format
+### TARGET_USERS Format
 
-The `STANDUP_SCHEDULE` variable uses cron format:
+Each user entry follows this format: `userId:timezone:hour:minute`
 
-```
-* * * * *
-│ │ │ │ │
-│ │ │ │ └─ Day of week (0-7, both 0 and 7 are Sunday)
-## Customization
-
+- **userId**: Slack user ID (required)
+- **timezone**: IANA timezone name (optional, defaults to `Europe/Sofia`)
+- **hour**: Hour in 24-hour format 0-23 (optional, defaults to `9`)
+- **minute**: Minute 0-59 (optional, defaults to `0`)
 ### Change Questions
 
+Edit `src/handlers/standup.ts` to modify the questions in the modal.
+
+### Change Standup Times
+
+Update the `TARGET_USERS` environment variable with the new time for each user. Each user can have their own standup time in their local timezone.
+
+### Change Update Format
+
+Modify the message blocks in the `standup_modal` view handler in `src/index.ts`.
 Edit `src/handlers/standup.ts` to modify the questions in the modal.
 
 ### Change Timezone
@@ -177,12 +187,14 @@ Edit `src/handlers/standup.js` to modify the questions in the modal.
 
 ### Change Timezone
 
-Edit the `timezone` option in `src/index.js` (default is `America/New_York`).
+## Troubleshooting
 
-### Change Update Format
-
-Modify the message blocks in the `standup_modal` view handler in `src/index.js`.
-
+- **Bot not responding**: Check that Socket Mode is enabled and your App Token is correct
+- **Permission errors**: Verify all required bot scopes are added
+- **Schedule not working**: Check your `TARGET_USERS` format and ensure the timezone names are valid IANA timezone identifiers
+- **User not receiving standup at expected time**: Verify the user's timezone, hour, and minute are correctly configured in `TARGET_USERS`
+- **Can't post to channel**: Make sure the bot is invited to the #notifications channel (`/invite @BotName`)
+- **Check bot logs**: The bot logs all user configurations on startup, including their standup times
 ## Troubleshooting
 
 - **Bot not responding**: Check that Socket Mode is enabled and your App Token is correct

@@ -22,6 +22,8 @@ interface DailyUpdatesStore {
 interface UserConfig {
   userId: string;
   timezone: string;
+  hour: number;
+  minute: number;
 }
 
 interface DailyThreadStore {
@@ -29,6 +31,7 @@ interface DailyThreadStore {
 }
 
 // Parse TARGET_USERS from env
+// Format: userId:timezone:hour:minute (e.g., U123456:Europe/Sofia:9:0,U789012:America/New_York:13:0)
 function parseTargetUsers(): UserConfig[] {
   const targetUsers = process.env.TARGET_USERS;
   if (!targetUsers) return [];
@@ -38,10 +41,17 @@ function parseTargetUsers(): UserConfig[] {
     .map((entry) => entry.trim())
     .filter((entry) => entry.length > 0)
     .map((entry) => {
-      const [userId, timezone] = entry.split(":");
+      const parts = entry.split(":");
+      const userId = parts[0]?.trim();
+      const timezone = parts[1]?.trim() || "Europe/Sofia";
+      const hour = parts[2] ? parseInt(parts[2].trim()) : 9;
+      const minute = parts[3] ? parseInt(parts[3].trim()) : 0;
+
       return {
-        userId: userId.trim(),
-        timezone: timezone?.trim() || "Europe/Sofia",
+        userId,
+        timezone,
+        hour,
+        minute,
       };
     });
 }
@@ -49,8 +59,6 @@ function parseTargetUsers(): UserConfig[] {
 // Check if it's time to send standup for a user
 function shouldSendStandupNow(
   userConfig: UserConfig,
-  targetHour: number,
-  targetMinute: number,
   targetWeekdays: number[]
 ): boolean {
   const now = new Date();
@@ -62,8 +70,8 @@ function shouldSendStandupNow(
   const weekday = getDay(zonedTime); // 0=Sunday, 1=Monday, ..., 6=Saturday
 
   return (
-    hour === targetHour &&
-    minute === targetMinute &&
+    hour === userConfig.hour &&
+    minute === userConfig.minute &&
     targetWeekdays.includes(weekday)
   );
 }
@@ -269,8 +277,8 @@ if (weekdayPart === "*") {
   targetWeekdays = [parseInt(weekdayPart)];
 }
 
-// Run every hour to check if it's time to send standup for any user
-cron.schedule("0 * * * *", async () => {
+// Run every minute to check if it's time to send standup for any user
+cron.schedule("* * * * *", async () => {
   const userConfigs = parseTargetUsers();
 
   if (userConfigs.length === 0) {
@@ -279,7 +287,7 @@ cron.schedule("0 * * * *", async () => {
 
   // Check which users should receive standup now
   const usersToNotify = userConfigs.filter((config) =>
-    shouldSendStandupNow(config, targetHour, targetMinute, targetWeekdays)
+    shouldSendStandupNow(config, targetWeekdays)
   );
 
   if (usersToNotify.length > 0) {
@@ -310,9 +318,13 @@ cron.schedule("0 * * * *", async () => {
   const userConfigs = parseTargetUsers();
   console.log(`👥 Target users: ${userConfigs.length}`);
   if (userConfigs.length > 0) {
-    console.log("📍 User timezones:");
+    console.log("📍 User configurations:");
     userConfigs.forEach((config) => {
-      console.log(`   - ${config.userId}: ${config.timezone}`);
+      console.log(
+        `   - ${config.userId}: ${config.timezone} at ${config.hour
+          .toString()
+          .padStart(2, "0")}:${config.minute.toString().padStart(2, "0")}`
+      );
     });
   }
 
