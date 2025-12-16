@@ -87,14 +87,10 @@ export async function handleUpdateResponse(
               type: "plain_text_input",
               action_id: "yesterday_input",
               multiline: true,
-              placeholder: {
-                type: "plain_text",
-                text: "What did you work on yesterday?",
-              },
             },
             label: {
               type: "plain_text",
-              text: "📅 What did you accomplish yesterday?",
+              text: "📅 What have you done since yesterday?",
             },
           },
           {
@@ -104,14 +100,10 @@ export async function handleUpdateResponse(
               type: "plain_text_input",
               action_id: "today_input",
               multiline: true,
-              placeholder: {
-                type: "plain_text",
-                text: "What are you working on today?",
-              },
             },
             label: {
               type: "plain_text",
-              text: "🎯 What will you work on today?",
+              text: "🎯 What will you do today?",
             },
           },
           {
@@ -123,12 +115,12 @@ export async function handleUpdateResponse(
               multiline: true,
               placeholder: {
                 type: "plain_text",
-                text: 'Any blockers or issues? (type "None" if no blockers)',
+                text: "(challenges, blockers, ad-hoc tasks, etc.)? If so, please quantify said impact.",
               },
             },
             label: {
               type: "plain_text",
-              text: "🚧 Any blockers or challenges?",
+              text: "🚧 Is there any event causing an impact on the plan?",
             },
             optional: true,
           },
