@@ -255,27 +255,8 @@ app.view("standup_modal", async ({ ack, body, view, client }) => {
   });
 });
 
-// Schedule daily standup questions
-const scheduleExpression = process.env.STANDUP_SCHEDULE || "0 9 * * 1-5";
-
-// Parse schedule to extract hour, minute, and weekdays
-const scheduleParts = scheduleExpression.split(" ");
-const targetMinute = parseInt(scheduleParts[0]);
-const targetHour = parseInt(scheduleParts[1]);
-const weekdayPart = scheduleParts[4];
-
 // Parse weekdays from cron expression
-let targetWeekdays: number[];
-if (weekdayPart === "*") {
-  targetWeekdays = [0, 1, 2, 3, 4, 5, 6]; // All days
-} else if (weekdayPart.includes("-")) {
-  const [start, end] = weekdayPart.split("-").map(Number);
-  targetWeekdays = Array.from({ length: end - start + 1 }, (_, i) => start + i);
-} else if (weekdayPart.includes(",")) {
-  targetWeekdays = weekdayPart.split(",").map(Number);
-} else {
-  targetWeekdays = [parseInt(weekdayPart)];
-}
+const targetWeekdays = [1, 2, 3, 4, 5]; // Default to Monday-Friday
 
 // Run every minute to check if it's time to send standup for any user
 cron.schedule("* * * * *", async () => {
@@ -313,7 +294,6 @@ cron.schedule("* * * * *", async () => {
 (async () => {
   await app.start();
   console.log("⚡️ Slack Standup Bot is running!");
-  console.log(`📅 Scheduled standup: ${scheduleExpression}`);
 
   const userConfigs = parseTargetUsers();
   console.log(`👥 Target users: ${userConfigs.length}`);
